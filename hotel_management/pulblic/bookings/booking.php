@@ -92,7 +92,21 @@ if (isset($_POST['book_now']) && isset($_SESSION['guest_id'])) {
 if (isset($_GET['logout'])) { session_destroy(); header("Location: " . $_SERVER['PHP_SELF']); exit; }
 
 // FETCH ALL ROOMS - ARRANGE BY ROOM NUMBER
-$rooms = $pdo->query("SELECT * FROM rooms ORDER BY CAST(room_number AS UNSIGNED) ASC, room_number ASC")->fetchAll();
+// Pagination Logic
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+$perPage = 6; // Number of rooms per page
+$offset = ($page - 1) * $perPage;
+
+// Get total count
+$total_rooms = $pdo->query("SELECT COUNT(*) FROM rooms")->fetchColumn();
+$total_pages = ceil($total_rooms / $perPage);
+
+// Fetch rooms with LIMIT and OFFSET
+$stmt = $pdo->prepare("SELECT * FROM rooms ORDER BY CAST(room_number AS UNSIGNED) ASC, room_number ASC LIMIT :limit OFFSET :offset");
+$stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
+$rooms = $stmt->fetchAll();
 
 $unique_images = [
     "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=600&q=80",
@@ -221,6 +235,40 @@ $unique_images = [
         </div>
         <?php endforeach; ?>
     </div>
+
+
+
+    <!-- Pagination Controls -->
+    <?php if ($total_pages > 1): ?>
+    <div class="row mt-5">
+        <div class="col-12 d-flex justify-content-center">
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <!-- Previous -->
+                    <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page - 1 ?>#explore" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+
+                    <!-- Page Numbers -->
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                        <li class="page-item <?= ($page == $i) ? 'active bg-warning border-warning' : '' ?>">
+                            <a class="page-link <?= ($page == $i) ? 'bg-warning border-warning text-white' : 'text-dark' ?>" href="?page=<?= $i ?>#explore"><?= $i ?></a>
+                        </li>
+                    <?php endfor; ?>
+
+                    <!-- Next -->
+                    <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?page=<?= $page + 1 ?>#explore" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <div class="modal fade" id="authModal" tabindex="-1">
