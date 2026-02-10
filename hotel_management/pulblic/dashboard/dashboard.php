@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../src/config.php';
 
 // 2. Authentication Check 
 if (!isLoggedIn()) {
-    redirect('../users/login.php');
+    redirect('../users/login.php'); // haduusan user login sameyn waxaa nalageynaa login form
 }
 
 // 3. Fetch Dashboard Totals using the $conn object from config.php

@@ -91,17 +91,14 @@ if (isset($_POST['book_now']) && isset($_SESSION['guest_id'])) {
 
 if (isset($_GET['logout'])) { session_destroy(); header("Location: " . $_SERVER['PHP_SELF']); exit; }
 
-// FETCH ALL ROOMS - ARRANGE BY ROOM NUMBER
-// Pagination Logic
+// FETCH ALL ROOMS
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
-$perPage = 6; // Number of rooms per page
+$perPage = 6;
 $offset = ($page - 1) * $perPage;
 
-// Get total count
 $total_rooms = $pdo->query("SELECT COUNT(*) FROM rooms")->fetchColumn();
 $total_pages = ceil($total_rooms / $perPage);
 
-// Fetch rooms with LIMIT and OFFSET
 $stmt = $pdo->prepare("SELECT * FROM rooms ORDER BY CAST(room_number AS UNSIGNED) ASC, room_number ASC LIMIT :limit OFFSET :offset");
 $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
@@ -120,11 +117,13 @@ $unique_images = [
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luxury Stay | Welcome</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { background: #f8f9fa; }
+        body { background: #f8f9fa; display: flex; flex-direction: column; min-height: 100vh; }
+        .main-content { flex: 1 0 auto; }
         .hero { 
             background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80'); 
             height: 450px; background-size: cover; background-position: center; color: white; 
@@ -138,137 +137,133 @@ $unique_images = [
         .badge-booked { background-color: #dc3545; }
         .btn-gold { background: #c5a059; color: white; border: none; }
         .btn-gold:hover { background: #ae8a46; color: white; }
+        
+        /* Footer Styles */
+        footer { background: #212529; color: #adb5bd; padding: 60px 0 30px; flex-shrink: 0; }
+        footer a { color: #adb5bd; text-decoration: none; transition: 0.3s; }
+        footer a:hover { color: #c5a059; }
+        .footer-border { border-top: 1px solid #343a40; padding-top: 30px; margin-top: 40px; }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-door-open me-2 text-warning"></i>LUXURY STAY</a>
-        <div class="ms-auto text-white">
-            <?php if(isset($_SESSION['guest_id'])): ?>
-                <span class="me-3 small">Hello, <strong><?= htmlspecialchars($_SESSION['guest_name']) ?></strong></span>
-                <a href="?logout=1" class="btn btn-outline-light btn-sm rounded-pill">Logout</a>
-            <?php else: ?>
-                <button class="btn btn-gold btn-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#authModal">Login / Register</button>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
-
-<div class="hero mb-5">
-    <div class="hero-content">
-        <h1 class="display-3 fw-bold mb-3">Welcome to Luxury Stay</h1>
-        <p class="lead fs-4">Where elegance meets comfort. Explore our exquisite collection of rooms designed for your perfect getaway.</p>
-        <a href="#explore" class="btn btn-gold btn-lg rounded-pill mt-3 px-5">Explore Rooms</a>
-    </div>
-</div>
-
-<div class="container mb-5" id="explore">
-    <div class="text-center mb-5">
-        <h2 class="fw-bold">Our Accommodations</h2>
-        <div class="bg-warning mx-auto" style="height: 3px; width: 60px;"></div>
-    </div>
-
-    <?php if($msg): ?>
-        <div class="alert alert-<?= $msg_type ?> alert-dismissible fade show shadow-sm mb-4">
-            <?= $msg ?> <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-
-    <div class="row g-4">
-        <?php foreach($rooms as $index => $r): 
-            $img_url = $unique_images[$index % count($unique_images)];
-            $is_available = ($r['status'] == 'Available');
-        ?>
-        <div class="col-md-4">
-            <div class="card room-card h-100">
-                <div class="position-relative">
-                    <img src="<?= $img_url ?>" class="room-img w-100" alt="Room">
-                    <span class="badge position-absolute top-0 end-0 m-3 <?= $is_available ? 'badge-available' : 'badge-booked' ?>">
-                        <?= htmlspecialchars($r['status']) ?>
-                    </span>
-                </div>
-                <div class="card-body">
-                    <h5 class="fw-bold mb-1">Room <?= htmlspecialchars($r['room_number']) ?></h5>
-                    <p class="text-muted small mb-3"><?= htmlspecialchars($r['room_type']) ?> • Max Capacity: <?= htmlspecialchars($r['capacity']) ?></p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="h5 fw-bold text-dark mb-0">$<?= number_format($r['price_per_night'], 2) ?></span>
-                        <?php if($is_available): ?>
-                            <button class="btn btn-dark btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="<?= isset($_SESSION['guest_id']) ? '#bookModal'.$r['id'] : '#authModal' ?>">
-                                Book Now
-                            </button>
-                        <?php else: ?>
-                            <button class="btn btn-secondary btn-sm rounded-pill" disabled>Unavailable</button>
-                        <?php endif; ?>
-                    </div>
-                </div>
+<div class="main-content">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#"><i class="bi bi-door-open me-2 text-warning"></i>LUXURY STAY</a>
+            <div class="ms-auto text-white">
+                <?php if(isset($_SESSION['guest_id'])): ?>
+                    <span class="me-3 small">Hello, <strong><?= htmlspecialchars($_SESSION['guest_name']) ?></strong></span>
+                    <a href="?logout=1" class="btn btn-outline-light btn-sm rounded-pill">Logout</a>
+                <?php else: ?>
+                    <button class="btn btn-gold btn-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#authModal">Login / Register</button>
+                <?php endif; ?>
             </div>
         </div>
+    </nav>
 
-        <div class="modal fade" id="bookModal<?= $r['id'] ?>" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <form class="modal-content" method="POST">
-                    <div class="modal-header border-0 pb-0">
-                        <h5 class="fw-bold">Reserve Room <?= htmlspecialchars($r['room_number']) ?></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="hero mb-5">
+        <div class="hero-content">
+            <h1 class="display-3 fw-bold mb-3">Welcome to Luxury Stay</h1>
+            <p class="lead fs-4">Where elegance meets comfort. Explore our exquisite collection of rooms designed for your perfect getaway.</p>
+            <a href="#explore" class="btn btn-gold btn-lg rounded-pill mt-3 px-5">Explore Rooms</a>
+        </div>
+    </div>
+
+    <div class="container mb-5" id="explore">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Our Accommodations</h2>
+            <div class="bg-warning mx-auto" style="height: 3px; width: 60px;"></div>
+        </div>
+
+        <?php if($msg): ?>
+            <div class="alert alert-<?= $msg_type ?> alert-dismissible fade show shadow-sm mb-4">
+                <?= $msg ?> <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <div class="row g-4">
+            <?php foreach($rooms as $index => $r): 
+                $img_url = $unique_images[$index % count($unique_images)];
+                $is_available = ($r['status'] == 'Available');
+            ?>
+            <div class="col-md-4">
+                <div class="card room-card h-100">
+                    <div class="position-relative">
+                        <img src="<?= $img_url ?>" class="room-img w-100" alt="Room">
+                        <span class="badge position-absolute top-0 end-0 m-3 <?= $is_available ? 'badge-available' : 'badge-booked' ?>">
+                            <?= htmlspecialchars($r['status']) ?>
+                        </span>
                     </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="room_id" value="<?= $r['id'] ?>">
-                        <input type="hidden" name="price" value="<?= $r['price_per_night'] ?>">
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label class="small fw-bold">Check-In</label>
-                                <input type="date" name="check_in" class="form-control" min="<?= date('Y-m-d') ?>" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="small fw-bold">Check-Out</label>
-                                <input type="date" name="check_out" class="form-control" min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required>
-                            </div>
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-1">Room <?= htmlspecialchars($r['room_number']) ?></h5>
+                        <p class="text-muted small mb-3"><?= htmlspecialchars($r['room_type']) ?> • Max Capacity: <?= htmlspecialchars($r['capacity']) ?></p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="h5 fw-bold text-dark mb-0">$<?= number_format($r['price_per_night'], 2) ?></span>
+                            <?php if($is_available): ?>
+                                <button class="btn btn-dark btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="<?= isset($_SESSION['guest_id']) ? '#bookModal'.$r['id'] : '#authModal' ?>">
+                                    Book Now
+                                </button>
+                            <?php else: ?>
+                                <button class="btn btn-secondary btn-sm rounded-pill" disabled>Unavailable</button>
+                            <?php endif; ?>
                         </div>
                     </div>
-                    <div class="modal-footer border-0">
-                        <button type="submit" name="book_now" class="btn btn-gold w-100 py-2 fw-bold rounded-pill">Confirm & Pay Now</button>
-                    </div>
-                </form>
+                </div>
+            </div>
+
+            <div class="modal fade" id="bookModal<?= $r['id'] ?>" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form class="modal-content" method="POST">
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="fw-bold">Reserve Room <?= htmlspecialchars($r['room_number']) ?></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="room_id" value="<?= $r['id'] ?>">
+                            <input type="hidden" name="price" value="<?= $r['price_per_night'] ?>">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="small fw-bold">Check-In</label>
+                                    <input type="date" name="check_in" class="form-control" min="<?= date('Y-m-d') ?>" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="small fw-bold">Check-Out</label>
+                                    <input type="date" name="check_out" class="form-control" min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="submit" name="book_now" class="btn btn-gold w-100 py-2 fw-bold rounded-pill">Confirm & Pay Now</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+        <?php if ($total_pages > 1): ?>
+        <div class="row mt-5">
+            <div class="col-12 d-flex justify-content-center">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                            <a class="page-link" href="?page=<?= $page - 1 ?>#explore">&laquo;</a>
+                        </li>
+                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                            <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
+                                <a class="page-link" href="?page=<?= $i ?>#explore"><?= $i ?></a>
+                            </li>
+                        <?php endfor; ?>
+                        <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
+                            <a class="page-link" href="?page=<?= $page + 1 ?>#explore">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
-        <?php endforeach; ?>
+        <?php endif; ?>
     </div>
-
-
-
-    <!-- Pagination Controls -->
-    <?php if ($total_pages > 1): ?>
-    <div class="row mt-5">
-        <div class="col-12 d-flex justify-content-center">
-            <nav aria-label="Page navigation">
-                <ul class="pagination">
-                    <!-- Previous -->
-                    <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                        <a class="page-link" href="?page=<?= $page - 1 ?>#explore" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-
-                    <!-- Page Numbers -->
-                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                        <li class="page-item <?= ($page == $i) ? 'active bg-warning border-warning' : '' ?>">
-                            <a class="page-link <?= ($page == $i) ? 'bg-warning border-warning text-white' : 'text-dark' ?>" href="?page=<?= $i ?>#explore"><?= $i ?></a>
-                        </li>
-                    <?php endfor; ?>
-
-                    <!-- Next -->
-                    <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
-                        <a class="page-link" href="?page=<?= $page + 1 ?>#explore" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    </div>
-    <?php endif; ?>
 </div>
 
 <div class="modal fade" id="authModal" tabindex="-1">
@@ -304,6 +299,34 @@ $unique_images = [
     </div>
 </div>
 
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <h5 class="text-white fw-bold mb-3"><i class="bi bi-door-open me-2 text-warning"></i>LUXURY STAY</h5>
+                <p class="small">Experience the finest hospitality with our curated selection of luxury rooms. We provide comfort, elegance, and world-class service to make your stay unforgettable.</p>
+            </div>
+            <div class="col-md-4 mb-4 text-md-center">
+                <h5 class="text-white fw-bold mb-3">Quick Links</h5>
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><a href="#">Home</a></li>
+                    <li class="mb-2"><a href="#explore">Our Rooms</a></li>
+                    <li class="mb-2"><a href="#">Terms of Service</a></li>
+                    <li class="mb-2"><a href="#">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h5 class="text-white fw-bold mb-3">Contact Us</h5>
+                <p class="small mb-2"><i class="bi bi-geo-alt me-2 text-warning"></i> 123 Grand Boulevard, Paris</p>
+                <p class="small mb-2"><i class="bi bi-telephone me-2 text-warning"></i> +33 1 23 45 67 89</p>
+                <p class="small mb-2"><i class="bi bi-envelope me-2 text-warning"></i> reservations@luxurystay.com</p>
+            </div>
+        </div>
+        <div class="footer-border text-center">
+            <p class="small mb-0">&copy; <?php echo date('Y'); ?> Luxury Stay Hotels. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

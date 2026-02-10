@@ -5,10 +5,14 @@ $dbname = 'hotel_management';
 $user = 'root'; 
 $pass = ''; 
 
+//PDO = PHP Data Objects
+//Waa hab (class) PHP ah oo:
+//PHP ku xira database
+//Ku fulin kara SQL queries (SELECT, INSERT, UPDATE, DELETE)
+
 try {
     $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
-    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-} catch (\PDOException $e) {
+uj} catch (\PDOException $e) {
     die("Database Connection Failed: " . $e->getMessage());
 }
 
@@ -18,19 +22,19 @@ $message_type = "";
 // 2. HANDLE DELETE LOGIC
 if (isset($_GET['delete_id'])) {
     $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-    $stmt->execute([$_GET['delete_id']]);
+    $stmt->execute([$_GET['delete_id']]);  // idga lasoo galiyey 
     $message = "User deleted successfully."; 
     $message_type = "success";
 }
 
 // 3. CHECK IF EDITING
 $edit_mode = false;
-$user_id = null;
+$user_id = null; // waxaa lagu shubi doona idga laoo galiyey
 $user_data = ['full_name' => '', 'username' => '', 'email' => '', 'role' => 'staff'];
 
 if (isset($_GET['edit_id'])) {
     $edit_mode = true;
-    $user_id = $_GET['edit_id'];
+    $user_id = $_GET['edit_id']; // idga lasoo galiyey ayaa lagu shubey user_id
     $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
     $stmt->execute([$user_id]);
     $user_data = $stmt->fetch(PDO::FETCH_ASSOC);

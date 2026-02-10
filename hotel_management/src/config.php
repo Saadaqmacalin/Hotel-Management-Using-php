@@ -19,10 +19,10 @@ if ($conn->connect_error) {
 $conn->set_charset("utf8mb4");
 
 // Function to redirect
-function redirect($url) {
-    header("Location: $url");
-    exit();
-}
+// function redirect($url) {
+//     header("Location: $url");
+//     exit();
+// }
 
 // Check if user is logged in
 function isLoggedIn() {
