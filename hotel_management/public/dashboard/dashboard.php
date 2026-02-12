@@ -1,6 +1,6 @@
 <?php
 // 1. Pathing and Configuration
-// Going up two levels from 'pulblic/dashboard/' to reach 'src/config.php'
+// Going up two levels from 'public/dashboard/' to reach 'src/config.php'
 require_once __DIR__ . '/../../src/config.php';
 
 // 2. Authentication Check 

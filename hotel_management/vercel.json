@@ -1,0 +1,21 @@
+{
+  "functions": {
+    "public/**/*.php": {
+      "runtime": "vercel-php@0.7.2"
+    }
+  },
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/public/users/login.php"
+    },
+    {
+      "src": "/(index.php)?",
+      "dest": "/public/users/login.php"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
